@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "Android NDK",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/Users/Panda/AppData/Local/Android/Sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include",
+                "C:/Users/Panda/AppData/Local/Android/Sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/aarch64-linux-android"
+            ],
+            "defines": [],
+            "compilerPath": "",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-clang-x64"
+        }
+    ],
+    "version": 4
+}

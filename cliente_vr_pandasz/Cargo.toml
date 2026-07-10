@@ -8,7 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 android-activity = { version = "0.6", features = ["native-activity"] }
-ndk = "0.9"
+ndk = { version = "0.9" }
 ndk-sys = "0.6"
 log = "0.4"
 android_logger = "0.14"
@@ -16,6 +16,9 @@ khronos-egl = { version = "6", features = ["dynamic"] }
 glow = "0.13"
 libloading = "0.8"
 jni = "0.21"
+
+[build-dependencies]
+bindgen = "0.69"
 
 [package.metadata.android]
 package = "com.pandasz.clientevr"
