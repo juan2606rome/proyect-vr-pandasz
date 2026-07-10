@@ -12,6 +12,10 @@ ndk = "0.9"
 ndk-sys = "0.6"
 log = "0.4"
 android_logger = "0.14"
+khronos-egl = { version = "6", features = ["dynamic"] }
+glow = "0.13"
+libloading = "0.8"
+jni = "0.21"
 
 [package.metadata.android]
 package = "com.pandasz.clientevr"
@@ -20,6 +24,9 @@ build_targets = ["aarch64-linux-android"]
 [package.metadata.android.sdk]
 min_sdk_version = 26
 target_sdk_version = 33
+
+[package.metadata.android.application.activity]
+orientation = "landscape"
 
 [[package.metadata.android.uses_feature]]
 name = "android.hardware.camera"
