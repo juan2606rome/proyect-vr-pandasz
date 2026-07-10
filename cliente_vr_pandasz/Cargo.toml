@@ -1,6 +1,32 @@
 [package]
 name = "cliente_vr_pandasz"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
 
 [dependencies]
+android-activity = { version = "0.6", features = ["native-activity"] }
+ndk = "0.9"
+ndk-sys = "0.6"
+log = "0.4"
+android_logger = "0.14"
+
+[package.metadata.android]
+package = "com.pandasz.clientevr"
+build_targets = ["aarch64-linux-android"]
+
+[package.metadata.android.sdk]
+min_sdk_version = 26
+target_sdk_version = 33
+
+[[package.metadata.android.uses_feature]]
+name = "android.hardware.camera"
+required = true
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.CAMERA"
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.INTERNET"

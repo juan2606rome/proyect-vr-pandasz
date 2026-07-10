@@ -1,0 +1,161 @@
+C:\proyect-vr-pandasz\cliente_vr_pandasz>adb logcat -c
+
+C:\proyect-vr-pandasz\cliente_vr_pandasz>adb logcat
+--------- beginning of main
+07-10 11:27:28.598 18276 18276 I ndasz.clientevr: Late-enabling -Xcheck:jni
+07-10 11:27:28.642 15407 15407 I cbfe    : onPause
+07-10 11:27:28.643 18276 18276 I ndasz.clientevr: Using generational CollectorTypeCC GC.
+07-10 11:27:28.643 15407 15407 W drep    : measuring already stopped.
+07-10 11:27:28.649 18276 18276 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+07-10 11:27:28.682 18276 18276 E ndasz.clientevr: BBinder_init Processname  <pre-initialized>
+07-10 11:27:28.711 18276 18276 W System  : ClassLoader referenced unknown path:
+07-10 11:27:28.713 18276 18276 D nativeloader: Configuring clns-7 for other apk . target_sdk_version=33, uses_libraries=, library_path=/data/app/~~JFi8OFYM1hb-HVKTuRRTzw==/com.pandasz.clientevr-cUBuD1CWgmnlx96qMGyeDw==/lib/arm64:/data/app/~~JFi8OFYM1hb-HVKTuRRTzw==/com.pandasz.clientevr-cUBuD1CWgmnlx96qMGyeDw==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.pandasz.clientevr
+07-10 11:27:28.725 18276 18276 V GraphicsEnvironment: Currently set values for:
+07-10 11:27:28.725 18276 18276 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[com.android.angle, com.linecorp.b612.android, com.campmobile.snow, com.google.android.apps.tachyon]
+07-10 11:27:28.725 18276 18276 V GraphicsEnvironment:   angle_gl_driver_selection_values=[angle, native, native, native]
+07-10 11:27:28.725 18276 18276 V GraphicsEnvironment: com.pandasz.clientevr is not listed in per-application setting
+07-10 11:27:28.725 18276 18276 V GraphicsEnvironment: Neither updatable production driver nor prerelease driver is supported.
+07-10 11:27:28.743 18276 18276 E ndasz.clientevr: BBinder_init Processname  com.pandasz.clientevr
+07-10 11:27:28.743 18276 18276 E ndasz.clientevr: BBinder_init hasGetProcessName  com.pandasz.clientevr
+07-10 11:27:28.833 18276 18276 D nativeloader: Load /data/app/~~JFi8OFYM1hb-HVKTuRRTzw==/com.pandasz.clientevr-cUBuD1CWgmnlx96qMGyeDw==/lib/arm64/libcliente_vr_pandasz.so using class loader ns clns-7 (caller=<unknown>): ok
+07-10 11:27:28.833 18276 18276 I android-activity: Creating: Activity = 0x3016, saved state size = 0
+07-10 11:27:28.836 18276 18393 I ClienteVrPandasz: cliente_vr_pandasz: Arrancando cliente_vr_pandasz
+07-10 11:27:28.837 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.838 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.840 18276 18276 D ClienteVrPandasz: android_activity::activity_impl::glue: Start: 0xb4000076b0004190
+07-10 11:27:28.840 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = 1
+07-10 11:27:28.841 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned ID_MAIN
+07-10 11:27:28.841 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling pre_exec_cmd(Start)
+07-10 11:27:28.841 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Pre: AppCmd::Start
+07-10 11:27:28.841 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Invoking callback for ID_MAIN command = Start
+07-10 11:27:28.841 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling post_exec_cmd(Start)
+07-10 11:27:28.841 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Post: AppCmd::Start
+07-10 11:27:28.841 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.841 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.846 18276 18276 D CompatChangeReporter: Compat change id reported: 210923482; UID 10351; state: ENABLED
+07-10 11:27:28.849 18276 18276 D ClienteVrPandasz: android_activity::activity_impl::glue: Resume: 0xb4000076b0004190
+07-10 11:27:28.849 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = 1
+07-10 11:27:28.849 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned ID_MAIN
+07-10 11:27:28.849 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling pre_exec_cmd(Resume)
+07-10 11:27:28.849 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Pre: AppCmd::Resume
+07-10 11:27:28.850 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Invoking callback for ID_MAIN command = Resume { loader: StateLoader { app: AndroidAppInner { jvm: JavaVM(0xb4000076e0011850), native_activity: NativeActivityGlue { inner: WaitableNativeActivityState { mutex: Mutex { data: NativeActivityState { destroyed: false, activity: 0xb4000076b0004190, msg_read: 142, msg_write: 143, config: Configuration { mcc: 732, mnc: Some(123), lang: Some("es"), country: Some("CO"), orientation: Port, touchscreen: Finger, density: Some(440), keyboard: NoKeys, navigation: NoNav, keys_hidden: Soft, nav_hidden: Any, sdk_version: 35, screen_size: Normal, screen_long: Yes, ui_mode_type: Normal, ui_mode_night: Yes }, saved_state: [], input_queue: 0x0, window: None, content_rect: ARect { left: 0, top: 0, right: 0, bottom: 0 }, activity_state: Resume, destroy_requested: false, thread_state: Running, app_has_saved_state: false, pending_input_queue: 0x0, pending_window: None }, poisoned: false, .. }, cond: Condvar { .. } } }, activity: Global { obj: JObject { internal: 0x3326, lifetime: PhantomData<&()> } }, main_callbacks: MainCallbacks { inner: MainCallbacksState { _pending_detach: false, event_fd: 144, callbacks: Mutex { data: CallbackBuffers { front: 0, back: 0 }, poisoned: false, .. } } }, looper: ForeignLooper { ptr: 0xb4000076a001b710 }, main_looper: ForeignLooper { ptr: 0xb4000076a0013010 }, key_maps: Mutex { data: {}, poisoned: false, .. }, input_receiver: Mutex { data: None, poisoned: false, .. }, app_asset_manager: AssetManager { ptr: 0xb4000077e0014350 } } } }
+07-10 11:27:28.850 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling post_exec_cmd(Resume)
+07-10 11:27:28.850 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Post: AppCmd::Resume
+07-10 11:27:28.850 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.850 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.854 18276 18276 D nativeloader: Load libpowerhalwrap_jni.so using system ns (caller=/system_ext/framework/mediatek-framework.jar): ok
+07-10 11:27:28.854 18276 18276 I PowerHalWrapper: PowerHalWrapper.getInstance
+07-10 11:27:28.854 18276 18276 I M-ProMotion: M-ProMotion is disabled
+07-10 11:27:28.855 18276 18396 I PowerHalWrapper: PowerHalWrapper.getInstance
+07-10 11:27:28.863 18276 18276 W libc    : Access denied finding property "persist.vivo.ltw.enabled"
+07-10 11:27:28.866 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = -3
+07-10 11:27:28.866 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned POLL_TIMEOUT
+07-10 11:27:28.866 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.866 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.882 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = -3
+07-10 11:27:28.882 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned POLL_TIMEOUT
+07-10 11:27:28.883 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.883 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.883 18276 18276 D ClienteVrPandasz: android_activity::activity_impl::glue: InputQueueCreated: 0xb4000076b0004190 -- 0xb40000775004e580
+07-10 11:27:28.883 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = 1
+07-10 11:27:28.883 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned ID_MAIN
+07-10 11:27:28.883 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling pre_exec_cmd(InputQueueChanged)
+07-10 11:27:28.883 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Pre: AppCmd::InputQueueChanged
+07-10 11:27:28.883 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Attaching input queue to looper
+07-10 11:27:28.883 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling post_exec_cmd(InputQueueChanged)
+07-10 11:27:28.883 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Post: AppCmd::InputQueueChanged
+07-10 11:27:28.883 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.883 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.900 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = -3
+07-10 11:27:28.900 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned POLL_TIMEOUT
+07-10 11:27:28.900 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.900 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.907 18276 18276 D BufferQueueConsumer: [](id:476400000000,api:0,p:-1,c:18276) connect: controlledByApp=false
+07-10 11:27:28.907 18276 18276 D BLASTBufferQueue: [VRI[NativeActivity]#0](f:0,a:0) constructor()
+07-10 11:27:28.907 18276 18276 D BLASTBufferQueue: [VRI[NativeActivity]#0](f:0,a:0) update width=1080 height=2404 format=4 mTransformHint=0
+07-10 11:27:28.916 18276 18276 D ClienteVrPandasz: android_activity::activity_impl::glue: NativeWindowCreated: 0xb4000076b0004190 -- 0xb40000765004ae00
+07-10 11:27:28.916 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = 1
+07-10 11:27:28.916 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned ID_MAIN
+07-10 11:27:28.916 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling pre_exec_cmd(InitWindow)
+07-10 11:27:28.916 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Pre: AppCmd::InitWindow
+07-10 11:27:28.916 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Invoking callback for ID_MAIN command = InitWindow
+07-10 11:27:28.916 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling post_exec_cmd(InitWindow)
+07-10 11:27:28.916 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Post: AppCmd::InitWindow
+07-10 11:27:28.916 18276 18276 D ClienteVrPandasz: android_activity::activity_impl::glue: NativeWindowResized: 0xb4000076b0004190 -- 0xb40000765004ae00
+07-10 11:27:28.916 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.916 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.917 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = 1
+07-10 11:27:28.917 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned ID_MAIN
+07-10 11:27:28.917 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling pre_exec_cmd(WindowResized)
+07-10 11:27:28.917 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Pre: AppCmd::WindowResized
+07-10 11:27:28.917 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Invoking callback for ID_MAIN command = WindowResized
+07-10 11:27:28.917 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling post_exec_cmd(WindowResized)
+07-10 11:27:28.917 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Post: AppCmd::WindowResized
+07-10 11:27:28.917 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.917 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.919 18276 18276 D ClienteVrPandasz: android_activity::activity_impl::glue: ContentRectChanged: 0xb4000076b0004190 -- 0x7fed1beca8
+07-10 11:27:28.919 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = 1
+07-10 11:27:28.919 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned ID_MAIN
+07-10 11:27:28.919 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling pre_exec_cmd(ContentRectChanged)
+07-10 11:27:28.919 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Pre: AppCmd::ContentRectChanged
+07-10 11:27:28.919 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Invoking callback for ID_MAIN command = ContentRectChanged
+07-10 11:27:28.919 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling post_exec_cmd(ContentRectChanged)
+07-10 11:27:28.919 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Post: AppCmd::ContentRectChanged
+07-10 11:27:28.919 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.919 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.921 18276 18276 D ClienteVrPandasz: android_activity::activity_impl::glue: NativeWindowRedrawNeeded: 0xb4000076b0004190 -- 0xb40000765004ae00
+07-10 11:27:28.921 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = 1
+07-10 11:27:28.921 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned ID_MAIN
+07-10 11:27:28.922 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling pre_exec_cmd(WindowRedrawNeeded)
+07-10 11:27:28.922 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Pre: AppCmd::WindowRedrawNeeded
+07-10 11:27:28.922 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Invoking callback for ID_MAIN command = RedrawNeeded
+07-10 11:27:28.922 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling post_exec_cmd(WindowRedrawNeeded)
+07-10 11:27:28.922 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Post: AppCmd::WindowRedrawNeeded
+07-10 11:27:28.922 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.922 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.930  1651  1803 I ActivityTaskManager: Displayed com.pandasz.clientevr/android.app.NativeActivity for user 0: +416ms
+07-10 11:27:28.938 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = -3
+07-10 11:27:28.938 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned POLL_TIMEOUT
+07-10 11:27:28.938 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.938 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.950 18276 18276 D ClienteVrPandasz: android_activity::activity_impl::glue: WindowFocusChanged: 0xb4000076b0004190 -- 1
+07-10 11:27:28.951 18276 18276 V ImeFocusController: onWindowFocus: com.android.internal.policy.DecorView{9517e5e V.E...... R.....ID 0,0-1080,2404}[NativeActivity] softInputMode=STATE_UNSPECIFIED|ADJUST_RESIZE
+07-10 11:27:28.951 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = 1
+07-10 11:27:28.951 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned ID_MAIN
+07-10 11:27:28.951 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling pre_exec_cmd(GainedFocus)
+07-10 11:27:28.951 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Pre: AppCmd::GainedFocus
+07-10 11:27:28.951 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Invoking callback for ID_MAIN command = GainedFocus
+07-10 11:27:28.951 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling post_exec_cmd(GainedFocus)
+07-10 11:27:28.951 18276 18393 V ClienteVrPandasz: android_activity::activity_impl::glue: Post: AppCmd::GainedFocus
+07-10 11:27:28.951 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.951 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.967 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = -3
+07-10 11:27:28.967 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned POLL_TIMEOUT
+07-10 11:27:28.967 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.967 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:28.970 20359 20359 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():2274
+07-10 11:27:28.972 20359 20359 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatusInternal():128 repeatCheckTimes = 0, locked = false
+07-10 11:27:28.973 20359 20359 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1459 onStartInput(EditorInfo{EditorInfo{packageName=com.pandasz.clientevr, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+07-10 11:27:28.973 20359 20359 I LatinIMEBase: LatinIMEBase.updateInputViewCoverNavigation():317 Update input view padding, isNavbarOverInputWindow=false, bottom inset=116
+07-10 11:27:28.974 20359 20359 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatusInternal():128 repeatCheckTimes = 1, locked = false
+07-10 11:27:28.983 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = -3
+07-10 11:27:28.983 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned POLL_TIMEOUT
+07-10 11:27:28.984 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:28.984 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:29.000 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = -3
+07-10 11:27:29.000 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned POLL_TIMEOUT
+07-10 11:27:43.374 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = -3
+07-10 11:27:43.374 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned POLL_TIMEOUT
+07-10 11:27:43.375 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:43.375 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+07-10 11:27:43.403 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: pollOnce id = -3
+07-10 11:27:43.403 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: ALooper_pollOnce returned POLL_TIMEOUT
+07-10 11:27:43.403 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: poll_events
+07-10 11:27:43.403 18276 18393 V ClienteVrPandasz: android_activity::activity_impl: Calling ALooper_pollOnce, timeout = 16
+^C
+C:\proyect-vr-pandasz\cliente_vr_pandasz>
+
+C:\proyect-vr-pandasz\cliente_vr_pandasz>adb shell ps | findstr pandasz
+u0_a351      18276   889   24631584 149152 0                   0 S com.pandasz.clientevr
+
+C:\proyect-vr-pandasz\cliente_vr_pandasz>
