@@ -3,13 +3,19 @@
 use android_activity::AndroidApp;
 use log::{error, info};
 use std::ffi::{c_void, CString};
-use std::fs::File;
-use std::io::Write;
+use std::net::UdpSocket;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 include!(concat!(env!("OUT_DIR"), "/camera_bindings.rs"));
 
 const TEMPLATE_RECORD: u32 = 3;
 const CONFIGURE_FLAG_ENCODE: u32 = 1;
+
+// --- CONFIGURA ESTO ---
+const IP_PC: &str = "192.168.1.7"; // ej: "192.168.1.50"
+const PUERTO_CAMARA: u16 = 5001;
+// ----------------------
 
 unsafe fn set_str(fmt: *mut AMediaFormat, key: &str, val: &str) {
     let k = CString::new(key).unwrap();
@@ -35,10 +41,23 @@ fn esperar_permiso_camara(app: &AndroidApp) -> bool {
     false
 }
 
-pub fn iniciar_camara(app: &AndroidApp) {
+pub fn iniciar_camara(app: &AndroidApp, activo: Arc<AtomicBool>) {
     if !esperar_permiso_camara(app) {
         return;
     }
+
+    let sock = match UdpSocket::bind("0.0.0.0:0") {
+        Ok(s) => s,
+        Err(e) => {
+            error!("No se pudo crear socket UDP de cámara: {:?}", e);
+            return;
+        }
+    };
+    if let Err(e) = sock.connect((IP_PC, PUERTO_CAMARA)) {
+        error!("No se pudo conectar UDP a {}:{} -> {:?}", IP_PC, PUERTO_CAMARA, e);
+        return;
+    }
+    info!("Socket UDP de cámara conectado a {}:{}", IP_PC, PUERTO_CAMARA);
 
     unsafe {
         let format = AMediaFormat_new();
@@ -131,30 +150,40 @@ pub fn iniciar_camara(app: &AndroidApp) {
             error!("Fallo iniciando captura repetitiva");
             return;
         }
-        info!("Captura de cámara iniciada, grabando a archivo local...");
-
-        let ruta = "/data/data/com.pandasz.clientevr/files/camara.h264";
-        let mut archivo = match File::create(ruta) {
-            Ok(f) => f,
-            Err(e) => { error!("No se pudo crear archivo de salida: {:?}", e); return; }
-        };
-        info!("Guardando H.264 crudo en: {}", ruta);
+        info!("Captura de cámara iniciada, transmitiendo por UDP...");
 
         let mut info: AMediaCodecBufferInfo = std::mem::zeroed();
-        loop {
+        let mut frames_enviados: u64 = 0;
+        while activo.load(Ordering::Relaxed) {
             let idx = AMediaCodec_dequeueOutputBuffer(codec, &mut info, 10_000);
             if idx >= 0 {
                 let mut out_size: usize = 0;
                 let ptr = AMediaCodec_getOutputBuffer(codec, idx as usize, &mut out_size);
                 if !ptr.is_null() && info.size > 0 {
                     let slice = std::slice::from_raw_parts(ptr.add(info.offset as usize), info.size as usize);
-                    if let Err(e) = archivo.write_all(slice) {
-                        error!("Error escribiendo frame a disco: {:?}", e);
+                    // Formato: [4 bytes tamaño, little-endian][NAL crudo]
+                    let len_bytes = (slice.len() as u32).to_le_bytes();
+                    if sock.send(&len_bytes).is_ok() {
+                        if let Err(e) = sock.send(slice) {
+                            error!("Error enviando NAL por UDP: {:?}", e);
+                        } else {
+                            frames_enviados += 1;
+                            if frames_enviados % 60 == 0 {
+                                info!("Frames enviados: {}", frames_enviados);
+                            }
+                        }
                     }
                 }
                 AMediaCodec_releaseOutputBuffer(codec, idx as usize, false);
             }
         }
+
+        info!("Cerrando módulo de cámara (señal de salida recibida)");
+        ACameraCaptureSession_stopRepeating(session);
+        AMediaCodec_stop(codec);
+        AMediaCodec_delete(codec);
+        ACameraCaptureSession_close(session);
+        ACameraDevice_close(device);
     }
 }
 

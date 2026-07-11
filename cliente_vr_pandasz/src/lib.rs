@@ -2,8 +2,17 @@ mod renderer;
 mod camara;
 
 use android_activity::{AndroidApp, MainEvent, PollEvent};
+use android_activity::input::InputEvent;
 use log::info;
 use renderer::Renderer;
+use std::net::UdpSocket;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+
+// --- CONFIGURA ESTO (misma IP que en camara.rs) ---
+const IP_PC: &str = "192.168.1.7"; // ej: "TU IP PC"
+const PUERTO_IMU: u16 = 5002;
+// ---------------------------------------------------
 
 #[no_mangle]
 fn android_main(app: AndroidApp) {
@@ -17,10 +26,14 @@ fn android_main(app: AndroidApp) {
     ocultar_barra_sistema(&app);
     pedir_permiso_camara(&app);
 
-    std::thread::spawn(|| leer_sensores_cabeza());
+    let activo = Arc::new(AtomicBool::new(true));
+
+    let activo_imu = activo.clone();
+    std::thread::spawn(move || leer_sensores_cabeza(activo_imu));
 
     let app_camara = app.clone();
-    std::thread::spawn(move || camara::iniciar_camara(&app_camara));
+    let activo_camara = activo.clone();
+    std::thread::spawn(move || camara::iniciar_camara(&app_camara, activo_camara));
 
     let mut renderer: Option<Renderer> = None;
     let mut quit = false;
@@ -36,6 +49,23 @@ fn android_main(app: AndroidApp) {
                 PollEvent::Main(MainEvent::TerminateWindow { .. }) => {
                     renderer = None;
                 }
+                PollEvent::Main(MainEvent::InputAvailable) => {
+                    if let Ok(mut iter) = app.input_events_iter() {
+                        loop {
+                            let consumido = iter.next(|event| {
+                                match event {
+                                    InputEvent::MotionEvent(_) | InputEvent::KeyEvent(_) => {
+                                        android_activity::InputStatus::Handled
+                                    }
+                                    _ => android_activity::InputStatus::Unhandled,
+                                }
+                            });
+                            if !consumido {
+                                break;
+                            }
+                        }
+                    }
+                }
                 PollEvent::Main(MainEvent::Destroy) => quit = true,
                 _ => {}
             }
@@ -45,9 +75,12 @@ fn android_main(app: AndroidApp) {
             r.dibujar_frame();
         }
     }
+
+    info!("Destroy recibido, señalando a los hilos que se detengan...");
+    activo.store(false, Ordering::Relaxed);
 }
 
-fn leer_sensores_cabeza() {
+fn leer_sensores_cabeza(activo: Arc<AtomicBool>) {
     unsafe {
         ndk_sys::ALooper_prepare(ndk_sys::ALOOPER_PREPARE_ALLOW_NON_CALLBACKS as i32);
         let looper = ndk_sys::ALooper_forThread();
@@ -71,9 +104,24 @@ fn leer_sensores_cabeza() {
         );
         ndk_sys::ASensorEventQueue_enableSensor(queue, sensor);
         ndk_sys::ASensorEventQueue_setEventRate(queue, sensor, 1_000_000 / 60);
-        info!("Sensor IMU inicializado, esperando eventos de rotación...");
-        loop {
-            let ret = ndk_sys::ALooper_pollAll(-1, std::ptr::null_mut(), std::ptr::null_mut(), std::ptr::null_mut());
+
+        let sock = match UdpSocket::bind("0.0.0.0:0") {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("No se pudo crear socket UDP de IMU: {:?}", e);
+                return;
+            }
+        };
+        if let Err(e) = sock.connect((IP_PC, PUERTO_IMU)) {
+            log::error!("No se pudo conectar UDP IMU a {}:{} -> {:?}", IP_PC, PUERTO_IMU, e);
+            return;
+        }
+        info!("Sensor IMU inicializado, transmitiendo a {}:{}", IP_PC, PUERTO_IMU);
+
+        // Timeout corto (100ms) en vez de -1 para poder revisar `activo`
+        // periódicamente y salir limpio cuando la app se destruye.
+        while activo.load(Ordering::Relaxed) {
+            let ret = ndk_sys::ALooper_pollAll(100, std::ptr::null_mut(), std::ptr::null_mut(), std::ptr::null_mut());
             if ret == ident {
                 let mut events: [ndk_sys::ASensorEvent; 8] = std::mem::zeroed();
                 let count = ndk_sys::ASensorEventQueue_getEvents(queue, events.as_mut_ptr(), events.len());
@@ -81,10 +129,16 @@ fn leer_sensores_cabeza() {
                     let ev = &events[i];
                     let data = ev.__bindgen_anon_1.__bindgen_anon_1.data;
                     let (x, y, z, w) = (data[0], data[1], data[2], data[3]);
-                    info!("head_quat x={:.4} y={:.4} z={:.4} w={:.4}", x, y, z, w);
+                    let mut buf = [0u8; 16];
+                    buf[0..4].copy_from_slice(&x.to_le_bytes());
+                    buf[4..8].copy_from_slice(&y.to_le_bytes());
+                    buf[8..12].copy_from_slice(&z.to_le_bytes());
+                    buf[12..16].copy_from_slice(&w.to_le_bytes());
+                    let _ = sock.send(&buf);
                 }
             }
         }
+        info!("Hilo IMU detenido (señal de salida recibida)");
     }
 }
 
