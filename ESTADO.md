@@ -1,0 +1,80 @@
+# Proyecto: Cliente VR propio (Cardboard-style) con módulo de cámara + IMU sobre ALVR client_core
+
+Documento único de estado. Reemplaza a todas las versiones anteriores de este markdown. Todo lo confirmado en hardware real está marcado como tal; todo lo pendiente o no verificado está marcado explícitamente, para que cualquier persona (o IA) que retome esto sepa exactamente qué está hecho y qué falta.
+
+## 1. Objetivo del proyecto
+
+Construir una app Android nativa en Rust (NativeActivity, sin JVM propia más allá de llamadas JNI puntuales) que:
+
+- Renderice video en modo Cardboard (split-screen estéreo simple, sin corrección de distorsión de lente todavía).
+- Lea la orientación de cabeza desde el sensor de rotación del propio celular (sin runtime OpenXR, porque el celular del usuario no lo tiene).
+- Capture video de la cámara física del celular, lo codifique en H.264 por hardware, y lo transmita a un PC en la misma red Wi-Fi, para usarlo como cámara de "mando" en un sistema de tracking externo que corre en Python en ese PC.
+- Eventualmente consuma `alvr_client_core` (la librería de red/protocolo/decodificación de video de ALVR, licencia MIT) para recibir el video real de SteamVR — esta parte todavía **no se ha empezado**.
+
+Restricción de licencia del usuario: todo el código propio debe quedar en MIT. Se descartó explícitamente basarse en PhoneVR (el software que sí corre hoy en el celular del usuario como visor Cardboard) porque es GPL-3.0; PhoneVR solo se usó como referencia conceptual de qué hace, nunca se copió código de ahí. La pieza que resuelve esto de forma limpia es `alvr_client_core`, dentro del propio repo de ALVR (MIT): la lógica de red/protocolo/decodificación de video separada a propósito del renderer OpenXR, pensada para que terceros construyan clientes alternativos.
+
+## 2. Entorno de desarrollo (Windows) — confirmado
+
+- Sistema operativo: Windows 10.0.26200.
+- Proyecto raíz: `C:\proyect-vr-pandasz`, con subcarpetas `cliente_vr_pandasz` (cliente Rust/Android), `ALVR` (repo oficial clonado, para sacar `client_core` más adelante) y `python` (receptor del lado PC, `receptor_pc.py`, no está subido al repositorio de git).
+- Android NDK instalado vía Android Studio: versión 27.1.12297006. Nota: ALVR en su CI fija la versión 25.1.8937393; si algún build futuro contra ALVR falla por versión de NDK, hay que instalar esa versión específica adicional desde Android Studio.
+- Rust: cargo 1.97.0 vía rustup, con los cuatro targets Android instalados (`aarch64`, `armv7`, `x86_64`, `i686`) aunque el celular real solo necesita `aarch64-linux-android`.
+- Herramientas cargo instaladas: `cargo-ndk`, `cargo-apk`.
+- Variables de entorno permanentes (`ANDROID_HOME`, `ANDROID_NDK_HOME`, `JAVA_HOME` con la carpeta `jbr`, no `jre`, en esta instalación de Android Studio) puestas con `setx`, ya persistentes entre sesiones de terminal.
+- Celular real usado para todas las pruebas: marca Vivo, Android API level 35, idioma/región es_CO.
+- Python en el PC: `C:\Python314\python.exe`, con las librerías `opencv-python`, `numpy` y `av` (PyAV) instaladas.
+- ffmpeg (Gyan.FFmpeg 8.1.2, instalado vía winget) dejó de ser una dependencia activa del proyecto — ver sección 6 sobre por qué se abandonó el uso de la CLI de ffmpeg en el receptor.
+
+## 3. Configuración del proyecto Rust (`cliente_vr_pandasz`) — confirmado
+
+- Nombre del paquete Android: `com.pandasz.clientevr`. Nombre del crate: `cliente_vr_pandasz`, tipo `cdylib` (requerido por `cargo-apk`).
+- `min_sdk_version`: 26. `target_sdk_version`: 33. Orientación fijada en el manifest: landscape.
+- Permisos declarados: `android.permission.CAMERA`, `android.permission.INTERNET`. Feature de hardware requerida: `android.hardware.camera`.
+- Dependencias principales: `android-activity` (0.6), `ndk` (0.9), `ndk-sys` (0.6), `log`, `android_logger`, `khronos-egl` (con feature `dynamic`), `glow`, `libloading`, `jni`. Dependencia de build: `bindgen`, usada en `build.rs` para generar bindings propios contra los headers de cámara del NDK, porque el crate `ndk` no tiene binding maduro para `ACameraManager`/`ACameraDevice`/`ACameraCaptureSession`/`AImageReader`.
+- Archivos del proyecto: `Cargo.toml`, `build.rs`, `wrapper.h`, `src/lib.rs`, `src/renderer.rs`, `src/camara.rs`. El código completo vive en el repositorio del usuario en GitHub (`juan2606rome/proyect-vr-pandasz`).
+
+## 4. Qué está confirmado funcionando en hardware real (celular Vivo)
+
+- **Build e instalación**: el proyecto compila con `cargo apk build`, se instala con `adb install` y arranca sin excepción fatal de Java.
+- **Logging**: se corrigió un bug inicial donde `android_logger::Config::default()` no fija nivel máximo por defecto y filtraba los mensajes propios — se resolvió agregando `.with_max_level(log::LevelFilter::Trace)`.
+- **Renderer EGL/GL**: confirmado en hardware. Actualmente dibuja dos mitades de pantalla con colores sólidos distintos por ojo, usando dos `TRIANGLE_STRIP` con shaders mínimos. Esto confirma que el mecanismo de split-screen y el contexto EGL funcionan de punta a punta, pero **todavía no muestra video real** — sustituir esto por la textura decodificada de `alvr_client_core` es trabajo pendiente (sección 8).
+- **IMU**: confirmado. Usa `ASensorManager_getInstanceForPackage` (la API correcta para API 26+), sensor tipo `ROTATION_VECTOR`, con cuaterniones razonables al mover el celular. Cada cuaternión se empaqueta en 16 bytes (4 floats de 32 bits, little-endian) y se envía por UDP al PC.
+- **Cámara + encoder H.264**: confirmado que el encoder de hardware (`c2.mtk.avc.encoder`, MediaTek) inicia correctamente y entrega buffers de salida de forma continua y estable. Se detectan 2 cámaras en el dispositivo. Los bindings de la API de cámara del NDK se generaron con `bindgen` propio, ya que no existe binding maduro listo para esto en el crate `ndk`.
+- **Bug de permiso de cámara asíncrono, resuelto**: `requestPermissions` de Android es asíncrono y esta arquitectura (sin Activity de Java propia) no tiene un gancho directo al callback en el hilo de UI. Se resolvió con una espera activa que revisa cada 500ms si el permiso ya fue concedido, con timeout de 30 segundos.
+- **Bug de "cierre"/ANR al tocar la pantalla, resuelto**: no era un crash — `android-activity` 0.6 requiere confirmar explícitamente los eventos de input a través de `input_events_iter()`; al no hacerlo, el evento de touch quedaba sin confirmar y Android declaraba la app colgada (ANR) unos 8 segundos después, generando un volcado de stack que parecía un crash pero no lo era. Se resolvió manejando `MainEvent::InputAvailable` y marcando cada evento como `Handled`.
+- **Apagado limpio de hilos**: se agregó un `Arc<AtomicBool>` compartido entre el hilo principal, el de cámara y el de IMU, para que al recibir `MainEvent::Destroy` todos los hilos salgan limpiamente (el de IMU con un timeout corto en su `ALooper_pollAll` en vez de bloquear indefinidamente; el de cámara liberando el codec y cerrando la sesión de captura al salir).
+
+## 5. Capa de red — confirmado, con su propia historia de bugs resueltos
+
+El protocolo de cámara evolucionó bastante respecto al plan original:
+
+- **Primer intento (UDP)**: cada NAL se enviaba como dos datagramas UDP separados (tamaño + datos crudos). Funcionó para las primeras pruebas, pero tenía dos problemas de fondo: los I-frames (keyframes) suelen pesar más que el límite práctico de un datagrama UDP, así que se perdían silenciosamente; y el framing de "dos datagramas por NAL" no sobrevive pérdida ni reordenamiento de paquetes, dejando al receptor desincronizado para siempre tras el primer error.
+- **Solución**: se migró el canal de cámara a **TCP** (con reconexión automática en ambos extremos, `TCP_NODELAY` activado para evitar que el algoritmo de Nagle meta latencia agrupando paquetes chicos). El IMU se mantuvo en UDP a propósito, porque ahí la pérdida ocasional de un dato no importa y se prioriza la latencia mínima.
+- **Bug encontrado tras migrar a TCP**: el encoder solo emite el SPS/PPS (la configuración del codec, necesaria para poder decodificar cualquier frame) una única vez, al arrancar. Cuando el TCP se reconectaba a un decodificador nuevo del lado del PC, ese decodificador nunca había visto el SPS/PPS original y fallaba en todos los frames con errores de "PPS inexistente".
+- **Solución**: en el lado Android se cachea el primer buffer marcado como configuración de codec (`BUFFER_FLAG_CODEC_CONFIG`), y se reenvía automáticamente al inicio de cada reconexión, antes de retomar el envío normal de frames. Esto garantiza que cualquier decodificador nuevo (tras una caída de red o un reinicio del receptor en el PC) pueda arrancar sin depender de haber estado conectado desde el primerísimo frame.
+- **Confirmado en pruebas reales**: la reconexión automática funciona correctamente tanto si se cierra y reabre el receptor en el PC como si se pierde la conexión de red momentáneamente — el celular reintenta conectar cada segundo y retoma la transmisión sin necesidad de reiniciar la app.
+- La IP del PC sigue hardcodeada como constante en el código Android (`src/lib.rs` y `src/camara.rs`); es un punto de fricción conocido si el usuario cambia de red, pero no se ha priorizado resolverlo todavía.
+
+## 6. Receptor en el PC (`receptor_pc.py`) — la parte con más historia de depuración
+
+El diseño final terminó siendo muy distinto al planteado originalmente, tras una serie larga de bugs encontrados y resueltos en orden:
+
+- **Bloqueo inicial**: ffmpeg no estaba instalado ni en el PATH del sistema. Se resolvió instalándolo vía winget, aunque el PATH de Windows tardó varias sesiones de terminal en refrescarse correctamente (un problema conocido de Windows: una ventana de terminal "nueva" no siempre hereda el PATH actualizado si se abrió desde un proceso de Explorer ya en marcha). La solución práctica y definitiva fue apuntar el script directamente a la ruta absoluta del `.exe` en vez de depender del PATH del sistema.
+- **Bug de ventana congelada tras el primer frame**: `cv2.imshow()` se estaba llamando desde un hilo secundario. En Windows, el sistema de ventanas de OpenCV necesita correr en el hilo principal para refrescarse correctamente; llamarlo desde otro hilo hace que la ventana se pinte una sola vez y luego deje de actualizarse. Se resolvió moviendo el bucle de `imshow`/`waitKey` al hilo principal, alimentado por una cola de un solo frame que descarta el frame viejo si llega uno nuevo antes de mostrarse — el mismo principio de baja latencia que usa ALVR (mostrar siempre el frame más reciente disponible, sin acumular una cola de frames atrasados).
+- **Intentos de usar ffmpeg por línea de comandos con flags de baja latencia**: se probaron combinaciones de `-fflags nobuffer`, `-flags low_delay`, `-probesize`/`-analyzeduration` reducidos, y `-threads 1`, buscando imitar la velocidad de transmisión de ALVR. Estas combinaciones rompían el pipeline de formas distintas según la mezcla exacta: a veces con errores de "PPS inexistente" (relacionado con el bug de reconexión ya descrito, antes de resolverlo), otras veces quedándose atascado en un solo frame decodificado sin avanzar más, y en el intento final con un error de "muxer" rechazando paquetes por timestamps inválidos.
+- **Diagnóstico decisivo**: se aisló el problema grabando el stream H.264 crudo a un archivo y probándolo por separado, primero con `ffplay` (mismo síntoma de un solo frame) y después decodificándolo completo a un destino nulo sin ningún flag de baja latencia — ahí sí decodificó cientos de frames sin un solo error, a una velocidad muy superior a tiempo real. Esto confirmó que el bitstream generado por el encoder de Android siempre estuvo sano; el problema entero estaba en cómo se invocaba ffmpeg por línea de comandos para el pipeline en vivo. La causa raíz específica del error de "muxer" resultó ser la combinación de `nobuffer` sin `genpts`: un stream H.264 elemental no trae timestamps propios, y sin darle a ffmpeg margen para inferirlos (que es justamente lo que hace el buffering que `nobuffer` desactiva) o sin pedirle explícitamente que los genere, terminaba produciendo paquetes con timestamps inválidos que el muxer rechazaba.
+- **Decisión final de arquitectura**: en vez de seguir ajustando flags de la CLI de ffmpeg (un enfoque fundamentalmente fragil para este caso, porque el "muxer" de salida siempre va a exigir timestamps válidos que un stream H.264 crudo no tiene), se cambió a decodificar con **PyAV**, una librería de Python que habla directo con las mismas librerías internas de ffmpeg (`libavcodec`) pero como código Python normal, en el mismo proceso — sin lanzar ningún ejecutable externo, sin pipes de Windows, y sin ningún "muxer" de por medio que exija timestamps. Este cambio resolvió el problema de raíz y de paso acerca la arquitectura del receptor a cómo trabaja ALVR internamente (decode en el mismo proceso).
+- **Estado actual, confirmado en pruebas reales**: el video llega en vivo, de forma estable, y sobrevive reconexiones (salir y volver a entrar a la app, o interrupciones momentáneas de red) sin quedarse trabado. Queda un delay pequeño y constante (ya no crece con el tiempo, y bajó bastante respecto a los intentos anteriores con ffmpeg CLI). El siguiente ajuste sugerido y aún sin confirmar por el usuario es forzar en el encoder de Android un perfil H.264 Baseline (en vez de High) junto con modo de bitrate constante y prioridad de tiempo real, ya que el perfil High permite B-frames, que obligan tanto al encoder como al decodificador a reordenar frames internamente — una fuente de latencia fija que no depende de la red ni de Python.
+
+## 7. Cosas explícitamente no hechas todavía (para no asumir que están resueltas)
+
+- **Integración con `alvr_client_core`**: no se ha empezado. El repositorio de ALVR está clonado, pero nunca se ha generado ni inspeccionado el header real `alvr_client_core.h` en esta conversación. Cualquier nombre de función mencionado en versiones anteriores de este documento (`alvr_initialize`, `alvr_poll_event`, etc.) fue siempre un placeholder de ejemplo, nunca algo verificado contra un header real — antes de escribir cualquier binding para esto, hay que generar el header de verdad e inspeccionarlo.
+- El renderer sigue mostrando solo color sólido, no una textura de video real (esto depende de la integración con `alvr_client_core` de arriba).
+- No hay corrección de distorsión de lente en el renderer.
+- No se confirmó si el firewall de Windows llegó a bloquear tráfico entrante en los puertos 5001/5002 en algún momento; no ha sido necesario tocarlo hasta ahora, pero tampoco se descartó explícitamente como posible causa de algún fallo intermitente pasado.
+- El cuaternión de cabeza (`head_quat`) que llega al PC solo se imprime en consola; integrarlo con la lógica real de tracking del mando del lado de Python sigue pendiente.
+- Higiene de hilos JNI del lado Android: las funciones auxiliares que hacen `vm.attach_current_thread()` (permisos, pantalla encendida, ocultar barra de sistema) nunca hacen `detach` explícito. No es un problema actual porque son llamadas puntuales de corta vida, pero si en el futuro alguna se llama repetidamente en un loop, habría que revisar la acumulación de referencias JNI.
+
+## 8. Siguiente paso sugerido
+
+Con la cámara, el IMU y la red funcionando de forma estable, el siguiente hito natural — y el único punto de todo el proyecto que sigue siendo genuinamente incierto — es generar e inspeccionar el header real `alvr_client_core.h` desde el repositorio de ALVR ya clonado. Esa es la pieza que falta para poder escribir bindings reales (en vez de placeholders) contra la librería que eventualmente va a decodificar el video real de SteamVR y reemplazar el color sólido del renderer. Es intencional no inventar aquí nombres de funciones ni firmas: la fuente de verdad es el header generado en la máquina del usuario, no una suposición basada en proyectos similares.

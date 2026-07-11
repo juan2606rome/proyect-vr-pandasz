@@ -3,7 +3,8 @@
 use android_activity::AndroidApp;
 use log::{error, info};
 use std::ffi::{c_void, CString};
-use std::net::UdpSocket;
+use std::io::Write;
+use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -11,11 +12,12 @@ include!(concat!(env!("OUT_DIR"), "/camera_bindings.rs"));
 
 const TEMPLATE_RECORD: u32 = 3;
 const CONFIGURE_FLAG_ENCODE: u32 = 1;
+const BUFFER_FLAG_CODEC_CONFIG: u32 = 2; // marca el buffer que contiene SPS/PPS
 
-// --- CONFIGURA ESTO ---
-const IP_PC: &str = "192.168.1.7"; // ej: "192.168.1.50"
+// --- CONFIGURA ESTO (misma IP que en lib.rs) ---
+const IP_PC: &str = "192.168.1.7";
 const PUERTO_CAMARA: u16 = 5001;
-// ----------------------
+// -------------------------------------------------
 
 unsafe fn set_str(fmt: *mut AMediaFormat, key: &str, val: &str) {
     let k = CString::new(key).unwrap();
@@ -27,8 +29,6 @@ unsafe fn set_i32(fmt: *mut AMediaFormat, key: &str, val: i32) {
     AMediaFormat_setInt32(fmt, k.as_ptr(), val);
 }
 
-/// Bloquea este hilo (sin tocar la UI) hasta que el usuario conceda el
-/// permiso, revisando cada 500ms. Se rinde tras 30s por si nunca lo acepta.
 fn esperar_permiso_camara(app: &AndroidApp) -> bool {
     for _ in 0..60 {
         if crate::permiso_camara_concedido(app) {
@@ -41,23 +41,45 @@ fn esperar_permiso_camara(app: &AndroidApp) -> bool {
     false
 }
 
+fn conectar_tcp(activo: &Arc<AtomicBool>) -> Option<TcpStream> {
+    while activo.load(Ordering::Relaxed) {
+        match TcpStream::connect((IP_PC, PUERTO_CAMARA)) {
+            Ok(s) => {
+                let _ = s.set_nodelay(true);
+                info!("TCP de cámara conectado a {}:{}", IP_PC, PUERTO_CAMARA);
+                return Some(s);
+            }
+            Err(e) => {
+                error!("No se pudo conectar TCP a {}:{} -> {:?}, reintentando en 1s...", IP_PC, PUERTO_CAMARA, e);
+                std::thread::sleep(std::time::Duration::from_secs(1));
+            }
+        }
+    }
+    None
+}
+
+/// Envía un NAL (o el bloque de SPS/PPS) con el protocolo [4 bytes tamaño][datos].
+fn enviar_nal(stream: &mut TcpStream, datos: &[u8]) -> std::io::Result<()> {
+    let len_bytes = (datos.len() as u32).to_le_bytes();
+    stream.write_all(&len_bytes)?;
+    stream.write_all(datos)
+}
+
 pub fn iniciar_camara(app: &AndroidApp, activo: Arc<AtomicBool>) {
     if !esperar_permiso_camara(app) {
         return;
     }
 
-    let sock = match UdpSocket::bind("0.0.0.0:0") {
-        Ok(s) => s,
-        Err(e) => {
-            error!("No se pudo crear socket UDP de cámara: {:?}", e);
-            return;
-        }
+    let mut stream = match conectar_tcp(&activo) {
+        Some(s) => s,
+        None => return,
     };
-    if let Err(e) = sock.connect((IP_PC, PUERTO_CAMARA)) {
-        error!("No se pudo conectar UDP a {}:{} -> {:?}", IP_PC, PUERTO_CAMARA, e);
-        return;
-    }
-    info!("Socket UDP de cámara conectado a {}:{}", IP_PC, PUERTO_CAMARA);
+
+    // Guarda el bloque de SPS/PPS (BUFFER_FLAG_CODEC_CONFIG) la primera vez
+    // que sale del encoder, para poder reenviarlo cada vez que el TCP se
+    // reconecta a un ffmpeg nuevo -- sin esto, cualquier ffmpeg que no sea
+    // el de la primerísima conexión nunca ve el SPS/PPS y falla siempre.
+    let mut csd: Vec<u8> = Vec::new();
 
     unsafe {
         let format = AMediaFormat_new();
@@ -67,7 +89,13 @@ pub fn iniciar_camara(app: &AndroidApp, activo: Arc<AtomicBool>) {
         set_i32(format, "bitrate", 4_000_000);
         set_i32(format, "frame-rate", 30);
         set_i32(format, "color-format", 0x7f000789);
-        set_i32(format, "i-frame-interval", 1);
+        set_i32(format, "i-frame-interval", 2); 
+
+                // --- Hints de baja latencia, estilo ALVR ---
+        set_i32(format, "profile", 0x01);       // AVCProfileBaseline: sin B-frames, sin reordenamiento
+        set_i32(format, "bitrate-mode", 2);     // BITRATE_MODE_CBR: bitrate constante, menos análisis interno que VBR
+        set_i32(format, "priority", 0);         // 0 = tiempo real (evita que el encoder optimice para "calidad offline")
+        set_i32(format, "latency", 0);          // hint directo: minimizar frames de retraso internos (varios encoders MediaTek lo respetan)
 
         let mime = CString::new("video/avc").unwrap();
         let codec = AMediaCodec_createEncoderByType(mime.as_ptr());
@@ -150,27 +178,54 @@ pub fn iniciar_camara(app: &AndroidApp, activo: Arc<AtomicBool>) {
             error!("Fallo iniciando captura repetitiva");
             return;
         }
-        info!("Captura de cámara iniciada, transmitiendo por UDP...");
+        info!("Captura de cámara iniciada, transmitiendo por TCP...");
 
         let mut info: AMediaCodecBufferInfo = std::mem::zeroed();
         let mut frames_enviados: u64 = 0;
-        while activo.load(Ordering::Relaxed) {
+        'captura: while activo.load(Ordering::Relaxed) {
             let idx = AMediaCodec_dequeueOutputBuffer(codec, &mut info, 10_000);
             if idx >= 0 {
                 let mut out_size: usize = 0;
                 let ptr = AMediaCodec_getOutputBuffer(codec, idx as usize, &mut out_size);
                 if !ptr.is_null() && info.size > 0 {
                     let slice = std::slice::from_raw_parts(ptr.add(info.offset as usize), info.size as usize);
-                    // Formato: [4 bytes tamaño, little-endian][NAL crudo]
-                    let len_bytes = (slice.len() as u32).to_le_bytes();
-                    if sock.send(&len_bytes).is_ok() {
-                        if let Err(e) = sock.send(slice) {
-                            error!("Error enviando NAL por UDP: {:?}", e);
-                        } else {
+
+                    // Si este buffer ES el SPS/PPS, guárdalo para poder
+                    // reenviarlo en futuras reconexiones.
+                    if info.flags & BUFFER_FLAG_CODEC_CONFIG != 0 {
+                        csd.clear();
+                        csd.extend_from_slice(slice);
+                        info!("SPS/PPS capturado ({} bytes)", csd.len());
+                    }
+
+                    let resultado = enviar_nal(&mut stream, slice);
+                    match resultado {
+                        Ok(_) => {
                             frames_enviados += 1;
                             if frames_enviados % 60 == 0 {
                                 info!("Frames enviados: {}", frames_enviados);
                             }
+                        }
+                        Err(e) => {
+                            error!("Conexión TCP caída ({:?}), reconectando...", e);
+                            AMediaCodec_releaseOutputBuffer(codec, idx as usize, false);
+                            match conectar_tcp(&activo) {
+                                Some(mut s) => {
+                                    // Reenvía el SPS/PPS guardado ANTES que
+                                    // cualquier frame nuevo, para que el
+                                    // ffmpeg nuevo pueda decodificar desde ya.
+                                    if !csd.is_empty() {
+                                        if let Err(e) = enviar_nal(&mut s, &csd) {
+                                            error!("No se pudo reenviar SPS/PPS: {:?}", e);
+                                        } else {
+                                            info!("SPS/PPS reenviado a la nueva conexión");
+                                        }
+                                    }
+                                    stream = s;
+                                }
+                                None => break 'captura,
+                            }
+                            continue;
                         }
                     }
                 }
